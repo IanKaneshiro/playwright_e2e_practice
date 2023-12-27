@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 test.beforeEach("initial setup", async ({ page }) => {
   await page.goto("http://localhost:4200/");
@@ -110,9 +110,55 @@ test("locating parent elements", async ({ page }) => {
 });
 
 test("Reusing the locators", async ({ page }) => {
-  await page
+  const basicForm = page.locator("nb-card").filter({ hasText: "Basic Form" });
+  const emailField = basicForm.getByRole("textbox", { name: "Email" });
+  await emailField.fill("test@test.com");
+  await basicForm.getByRole("textbox", { name: "Password" }).fill("welcome123");
+  await basicForm.locator("nb-checkbox").click();
+  await basicForm.getByRole("button", { name: "Submit" }).click();
+
+  await expect(emailField).toHaveValue("test@test.com");
+});
+
+test("extracting values", async ({ page }) => {
+  // Single text value
+  const basicForm = page.locator("nb-card").filter({ hasText: "Basic Form" });
+  const buttonText = await basicForm.locator("button").textContent();
+
+  await expect(buttonText).toEqual("Submit");
+
+  // get all text value
+  const allRadioButtonLabels = await page.locator("nb-radio").allTextContents();
+  await expect(allRadioButtonLabels).toContain("Option 1");
+
+  // input value
+  const emailField = basicForm.getByRole("textbox", { name: "Email" });
+  await emailField.fill("test@test.com");
+  const emailValue = await emailField.inputValue();
+
+  await expect(emailValue).toEqual("test@test.com");
+
+  const placeholderValue = await emailField.getAttribute("placeholder");
+  await expect(placeholderValue).toEqual("Email");
+});
+
+test("assertions", async ({ page }) => {
+  const basicFormButton = page
     .locator("nb-card")
     .filter({ hasText: "Basic Form" })
-    .getByRole("textbox", { name: "Email" })
-    .fill("test@test.com");
+    .locator("button");
+
+  // General Assertions -> does not wait, has no time out
+  const value = 5;
+  expect(value).toEqual(5);
+
+  const text = await basicFormButton.textContent();
+  expect(text).toEqual("Submit");
+
+  // Locator Assertion -> will wait and have a default timeout
+  await expect(basicFormButton).toHaveText("Submit");
+
+  // Soft assertion -> does not stop test execution -> Not considered good practice
+  await expect.soft(basicFormButton).toHaveText("Submit2");
+  await basicFormButton.click();
 });
