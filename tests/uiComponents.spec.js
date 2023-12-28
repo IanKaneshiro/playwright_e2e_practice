@@ -31,4 +31,47 @@ test.describe("Form Layouts page", async () => {
     // locator assertion => expecting the input to have a certain value. We need to await this
     await expect(usingTheGridEmailInput).toHaveValue("test2@test.com");
   });
+  test("radio buttons", async ({ page }) => {
+    const usingTheGridForm = page.locator("nb-card", {
+      hasText: "Using the Grid",
+    });
+
+    // await usingTheGridForm.getByLabel("Option 1").check({ force: true });
+    await usingTheGridForm
+      .getByRole("radio", { name: "Option 1" })
+      .check({ force: true });
+
+    // const radioStatus = await usingTheGridForm
+    //   .getByRole("radio", { name: "Option 1" })
+    //   .isChecked();
+
+    // expect(radioStatus).toBeTruthy();
+
+    await expect(
+      usingTheGridForm.getByRole("radio", { name: "Option 2" })
+    ).not.toBeChecked();
+    await expect(
+      usingTheGridForm.getByRole("radio", { name: "Option 1" })
+    ).toBeChecked();
+  });
+});
+
+test("checkboxes", async ({ page }) => {
+  await page.getByText("Modal & Overlays").click();
+  await page.getByText("Toastr").click();
+
+  await page
+    .getByRole("checkbox", { name: "Hide on click" })
+    .uncheck({ force: true });
+  await page
+    .getByRole("checkbox", { name: "Prevent arising of duplicate toast" })
+    .check({ force: true });
+
+  const allBoxes = await page.getByRole("checkbox");
+
+  // .all will make a array of returned elements
+  for (const box of await allBoxes.all()) {
+    await box.uncheck({ force: true });
+    expect(await box.isChecked()).toBeFalsy();
+  }
 });
