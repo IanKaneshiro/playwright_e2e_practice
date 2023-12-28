@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import exp from "constants";
 
 test.beforeEach("initial setup", async ({ page }) => {
   await page.goto("http://localhost:4200/");
@@ -192,4 +193,70 @@ test("web tables", async ({ page }) => {
       }
     }
   }
+});
+
+test("datepickers", async ({ page }) => {
+  await page.getByText("Forms").click();
+  await page.getByText("Datepicker").click();
+
+  const calendarInputField = page.getByPlaceholder("Form Picker");
+  await calendarInputField.click();
+  let date = new Date();
+  date.setDate(date.getDate() + 7);
+  const expectedDate = date.getDate().toString();
+  const expectedMonthShort = date.toLocaleDateString("En-US", {
+    month: "short",
+  });
+  const expectedMonthLong = date.toLocaleDateString("En-US", { month: "long" });
+  const expectedYear = date.getFullYear();
+
+  const dateToAssert = `${expectedMonthShort} ${expectedDate}, ${expectedYear}`;
+
+  let calendarMonthAndYear = await page
+    .locator("nb-calendar-view-mode")
+    .textContent();
+  const expectedMonthAndYear = ` ${expectedMonthLong} ${expectedYear} `;
+
+  while (!calendarMonthAndYear.includes(expectedMonthAndYear)) {
+    await page
+      .locator('nb-calendar-pageable-navigation [data-name="chevron-right"]')
+      .click();
+    calendarMonthAndYear = await page
+      .locator("nb-calendar-view-mode")
+      .textContent();
+  }
+
+  await page
+    .locator('[class="day-cell ng-star-inserted"]')
+    .getByText(expectedDate, { exact: true }) // get by text is a partial match
+    .click();
+  await expect(calendarInputField).toHaveValue(dateToAssert);
+});
+
+test("sliders", async ({ page }) => {
+  // Update the slider attribute -> this is a shortcut
+  // const tempGauge = page.locator(
+  //   '[tabtitle="Temperature"] ngx-temperature-dragger circle'
+  // );
+  // await tempGauge.evaluate((node) => {
+  //   node.setAttribute("cx", "232.63098833543773");
+  //   node.setAttribute("cy", "232.63098833543773");
+  // });
+  // await tempGauge.click();
+
+  // Simulate mouse movement
+  const tempBox = page.locator(
+    '[tabtitle="Temperature"] ngx-temperature-dragger'
+  );
+  await tempBox.scrollIntoViewIfNeeded();
+  const box = await tempBox.boundingBox();
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 100, y);
+  await page.mouse.move(x + 100, y + 100);
+  await page.mouse.up();
+  await expect(tempBox).toContainText("30");
 });
