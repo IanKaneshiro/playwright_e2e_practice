@@ -14,6 +14,7 @@ test("drag and drop with iframes", async ({ page }) => {
   await page.mouse.down();
   await frame.locator("#trash").hover();
   await page.mouse.up();
+  // Mouse goes up
 
   await expect(frame.locator("#trash li h5")).toHaveText([
     "High Tatras 2",
